@@ -1,42 +1,45 @@
 # sage-guikit · Sage GUI Toolkit
 
-DeepSeek Harness (DSH) 插件——让 agent 能看屏幕、点鼠标、打字、按快捷键、管理窗口。Windows 原生，零外部依赖。
+DeepSeek Harness (DSH) 插件——让 agent 能看屏幕、点鼠标、打字、按快捷键、滚动、等待验证、管理窗口，并能对标准控件做 UIA 结构化定位与直读。Windows 原生，零外部依赖。
 
-## 工具
+## 精度栈（三层互补）
 
-| 工具 | 功能 |
-|------|------|
-| `gui_screen` | 显示器布局 / 虚拟桌面 / 光标位置（物理像素，多屏负坐标安全） |
-| `gui_screenshot` | 全桌面 / 单屏 / 任意区域截图 → PNG（模型用 read_image 看图） |
-| `gui_click` | 真实鼠标移动 + 点击（左/右/中键，单/双/三击） |
-| `gui_type` | 打字：Unicode 直注（绕 IME，支持中文）或剪贴板粘贴 |
-| `gui_key` | 组合键（ctrl+s / alt+f4 / win / printscreen ...） |
-| `gui_window` | 窗口列表 / 激活 / 移动 / 查坐标 |
+| 层 | 工具 | 适用 |
+|----|------|------|
+| 结构层 | `gui_uia` | 标准控件：按 Name / 控件类型定位；`invoke` 经 InvokePattern 直按按钮（最可靠）；`value` 经 ValuePattern 直读控件文本（输入验证无需截图） |
+| 视觉层 | `gui_screenshot annotate=true` | 自绘界面、游戏、UIA 盲区：坐标网格画进图里（隔行隔列标签），读标签报坐标，DPI 误差归零；红色十字准星标记光标 |
+| 验证层 | `gui_wait` | 像素变化 / 窗口出现轮询——点击后确认生效再继续 |
+
+操作层：`gui_click` / `gui_type` / `gui_key` / `gui_scroll` / `gui_window`。
+click 与 type 回显点击后的焦点窗口——点错立刻可见。
+
+## 全部工具（9）
+
+`gui_screen` 显示器布局 · `gui_screenshot` 截图+标注 · `gui_click` 点击 · `gui_type` 打字（Unicode 绕 IME 中文无损 / 剪贴板粘贴）· `gui_key` 组合键 · `gui_scroll` 滚轮（纵/横）· `gui_wait` 等待验证 · `gui_window` 窗口管理 · `gui_uia` 结构化查询
 
 ## 实现
 
-每个工具调用 = PowerShell 子进程 + `Add-Type` 内联 C#（user32 `SendInput` / `SetCursorPos` / `EnumWindows`）+ JSON stdout 回传。
-`SetProcessDPIAware` 保证高 DPI 下坐标即物理像素。无常驻服务、无 Python、无 API key。
+每个工具调用 = PowerShell 子进程 + `U32.v2.dll` 编译缓存（原子写入 tmp+Move、>4KB 完整性校验、失败自动回退内存编译）+ user32 `SendInput`/`SetCursorPos`/`EnumWindows`；UIA 走 `UIAutomationClient`。`SetProcessDPIAware` 保证高 DPI 下坐标即物理像素。无常驻服务、无 Python、无 API key。
 
 ## 安装（DSH profile）
 
 ```sh
-# 1. package.json dependencies 加 "sage-guikit": "link:E:/workspace/sage-guikit"
-# 2. package.json dsh.profile.bundles 加 "sage-guikit"
-# 3. 插件目录装 peer 依赖（铁律，缺了 import 会失败）
+# 1. profile 的 package.json dependencies 加 "sage-guikit": "link:E:/workspace/sage-guikit"
+# 2. 同文件 dsh.profile.bundles 加 "sage-guikit"
+# 3. 插件目录装 peer 依赖（铁律：link 包的裸导入从源位置解析，够不到 profile node_modules）
 cd E:\workspace\sage-guikit && pnpm install
 # 4. profile 目录 pnpm install，重启 dsh web
 ```
 
 ## 已知边界
 
-- UIPI：点不了管理员权限的窗口；锁屏 / UAC 安全桌面不可达
-- 坐标点击是「盲点」，复杂控件的结构化定位可搭配 Windows-MCP（UIA）
-- `gui_type` clipboard 模式会覆盖用户剪贴板；unicode 模式绕过 IME 更干净
-- 注入前先点击目标或 `gui_window activate`——程序化抢前台会被 Windows 前台锁静默拒绝
+- UIPI：点不了管理员权限窗口；锁屏 / UAC 安全桌面不可达
+- Windows 前台锁：程序化抢焦点会被静默拒绝——注入前先 `gui_window activate` 或点击目标
+- z 序陷阱：前台窗口切换后，原坐标可能落到别的窗口上——靠 click/type 的焦点回显发现
+- `gui_type` clipboard 模式覆盖用户剪贴板；unicode 模式绕过 IME 更干净
 
 ## 调研背景（为什么自研）
 
 - dsh-computer-use：桌面控制半边 macOS 专属，Win11 不可用
-- Windows-MCP：社区最优但 issue #385（DSH 子进程下 UIA 空桌面）+ 遥测默认开 + 常驻 150-250MB
+- Windows-MCP：社区最优但 issue #385（DSH 子进程下 UIA 空桌面）——本插件实测 UIA 在 DSH 子进程正常；遥测默认开 + 常驻 150-250MB 是它的额外代价
 - 详见圣殿记忆 `project_guikit.md`
