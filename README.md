@@ -37,6 +37,9 @@ cd E:\workspace\sage-guikit && pnpm install
 - Windows 前台锁：程序化抢焦点会被静默拒绝——注入前先 `gui_window activate` 或点击目标
 - z 序陷阱：前台窗口切换后，原坐标可能落到别的窗口上——靠 click/type 的焦点回显发现
 - `gui_type` clipboard 模式覆盖用户剪贴板；unicode 模式绕过 IME 更干净
+- DPI-unaware 前台窗口：前台若是 DPI-unaware 的 App（常见于 CEF/内嵌浏览器类），Windows 的 DPI 虚拟化会把 `SetCursorPos` 坐标缩放甚至返回 false。先激活一个 DPI-aware 窗口再点击；Obsidian(Electron) 正常
+- 锁屏：桌面锁屏时 `SetCursorPos` 静默返回 false、光标冻住、前台 Idle——这是环境阻挡，不是插件 bug；判据是光标真能移动
+- Electron/CEF 类应用 UIA 基本只能拿到空 Pane（无屏幕阅读器时不暴露交互树），这类必须走视觉标注坐标
 
 ## 调研背景（为什么自研）
 
