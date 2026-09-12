@@ -1,7 +1,7 @@
 {
   "name": "sage-guikit",
   "description": "Sage GUI Toolkit — Windows desktop control tools (screen layout / annotated screenshot / click / type / key / scroll / wait / window / UIA structured query) via PowerShell + SendInput + UIAutomation, DPI-aware and multi-monitor safe",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -10,7 +10,8 @@
   },
   "files": [
     "lib/index.js",
-    "cordis.patch.yml"
+    "cordis.patch.yml",
+    "CHANGELOG.md"
   ],
   "license": "MIT",
   "dsh": {
@@ -19,12 +20,23 @@
     }
   },
   "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-tools": "*"
+  },
+  "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/dsh-tools": "^0.1.2-rc.1"
+    "@deepseek-ai/dsh-tools": "^0.1.5-rc.1"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/gezi-wen/sage-plugins.git"
+    "url": "git+https://github.com/gezi-wen/sage-guikit.git"
+  },
+  "homepage": "https://github.com/gezi-wen/sage-guikit#readme",
+  "bugs": {
+    "url": "https://github.com/gezi-wen/sage-guikit/issues"
   },
   "keywords": [
     "dsh",
@@ -33,9 +45,5 @@
     "gui",
     "automation",
     "windows"
-  ],
-  "devDependencies": {
-    "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-tools": "0.1.1-rc.2"
-  }
+  ]
 }
