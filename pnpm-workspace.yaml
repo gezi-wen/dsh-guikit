@@ -1,7 +1,8 @@
 packages:
   - .
 
-# 开发环境：dsh-tools / cordis 由 DSH 宿主提供，本地只作 peer 解析用，
-# 所以允许自动装 peer（否则裸导入解析不到 dsh-tools 的传递依赖）。
-autoInstallPeers: true
+# 插件目录的官方姿势（见 DSH 升级记忆的「junction 桥」）：
+# peer 依赖由 $DSH_HOME 闭包经 junction 提供，插件目录不自动装 peer，
+# 这样全局升级 DSH 后插件不用改任何东西。
+autoInstallPeers: false
 confirmModulesPurge: false

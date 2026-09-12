@@ -49,6 +49,9 @@ const run = async (name, args) => {
 
 await run('gui_screen', {})
 await run('gui_screenshot', { w: 400, h: 300, annotate: true })
+await run('gui_window_shot', { window: process.argv[2] || 'DeepSeek Harness' })
+await run('gui_window_shot', { window: process.argv[2] || 'DeepSeek Harness', annotate: true })
+await run('gui_window', { action: 'list', limit: 5 })
 await run('gui_uia', { action: 'tree', title: process.argv[2] || 'DeepSeek Harness', max: 20 })
 await run('gui_wait', { mode: 'pixel', x: 700, y: 700, compare: 'eq', r: 21, g: 21, b: 23, timeoutMs: 1500 })
 console.log('[smoke] done')
