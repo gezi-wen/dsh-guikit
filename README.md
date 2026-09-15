@@ -97,4 +97,8 @@ node smoke-drag.mjs   # 拖拽端到端：起一个 DPI-aware 测试窗口，拖
 
 ## License
 
-MIT
+Apache-2.0 — 见 [LICENSE](LICENSE)，署名与第三方声明见 [NOTICE](NOTICE)。
+
+Copyright 2026 Bowen Zheng (gezi-wen)
+
+选 Apache-2.0 而不是 MIT，是因为它多两样东西：**明确的专利授权**（第 3 条），以及**`NOTICE` 必须随下游分发保留**（第 4(d) 条）——后者是 MIT 没有的，换协议之后别人 fork 走也没法把署名合法地删掉。

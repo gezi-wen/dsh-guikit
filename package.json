@@ -1,7 +1,7 @@
 {
   "name": "sage-guikit",
   "description": "Sage GUI Toolkit — Windows desktop control tools (screen layout / annotated screenshot / click / type / key / scroll / wait / window / UIA structured query) via PowerShell + SendInput + UIAutomation, DPI-aware and multi-monitor safe",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -11,9 +11,10 @@
   "files": [
     "lib/index.js",
     "cordis.patch.yml",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "NOTICE"
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
