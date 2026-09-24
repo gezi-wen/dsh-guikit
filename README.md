@@ -1,12 +1,12 @@
 # sage-guikit · Sage GUI Toolkit
 
-**Windows 桌面控制工具集**，给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的 agent 装上眼睛和手：看屏幕、单窗口截图、点鼠标、拖动、打字、按快捷键、滚动、等生效、管窗口，并能对标准控件做 Windows UI Automation 结构化定位。
+**Windows 桌面控制工具集**，给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的 agent 装上眼睛和手：看屏幕、单窗口截图、点鼠标、拖动、打字、按快捷键、滚动、等生效、**验证生效**、管窗口，并能对标准控件做 Windows UI Automation 结构化定位。
 
-Windows desktop-control toolset for DeepSeek Harness (DSH): monitor layout, whole-screen and single-window capture, click / drag / type / key / scroll, pixel & window polling, window management, and UI Automation structured queries. Eleven model tools, zero external dependencies — no resident service, no Python, no API key.
+Windows desktop-control toolset for DeepSeek Harness (DSH): monitor layout, whole-screen and single-window capture, click / drag / type / key / scroll, pixel / window / semantic verification, window management, and UI Automation structured queries. Twelve model tools, zero external dependencies — no resident service, no Python, no API key.
 
 - 平台：**Windows 10/11**（不跨平台）
 - 依赖：PowerShell 7（`pwsh`）+ .NET 的 `System.Drawing` / `UIAutomationClient`，都是系统自带
-- 形态：DSH profile bundle（host 侧注册 11 个模型工具）
+- 形态：DSH profile bundle（host 侧注册 12 个模型工具）
 
 ## 安装
 
@@ -24,11 +24,11 @@ pnpm add sage-guikit
 本地开发用 `link:` 也行：
 
 ```json
-"dependencies": { "sage-guikit": "link:E:/DSH-plugins/sage-guikit" }
+"dependencies": { "sage-guikit": "link:<你 clone 下来的目录>" }
 ```
 ⚠️ link 方式下裸导入从**源位置**向上解析，够不到 profile 的 `node_modules`——需要在插件目录自己跑一次 `pnpm install` 装 peer 依赖（`@deepseek-ai/cordis`、`@deepseek-ai/dsh-tools`）。从 npm 安装没有这个问题。
 
-## 工具（11）
+## 工具（12）
 
 | 工具 | 参数 | 用途 |
 |------|------|------|
@@ -42,6 +42,7 @@ pnpm add sage-guikit
 | `gui_scroll` | `x` `y` (必填) / `direction` / `notches` | 在 (x,y) 处滚轮。up/down 纵滚，left/right 横滚，默认 3 格 |
 | `gui_window` | `action` (必填)：`list`/`rect`/`activate`/`move` | 窗口管理：列出可见窗口（标题/句柄/pid/进程/矩形/z 序）、取单个窗口 bounds、激活到前台、移动改尺寸 |
 | `gui_wait` | `mode` (必填)：`pixel`/`window` | 轮询验证。`pixel` 盯某个像素：`compare=change` 与调用时基线比变化，`eq`/`neq` 比指定 RGB；`window` 等某个标题的顶层窗口出现。**点完先等生效再截图** |
+| `gui_verify` | `mode` (必填)：`element`/`window` + `title`/`handle`/`name`/`elType`/`enabled`/`valueEquals`/`boundsX..H`/`tolerancePx`/`timeoutMs`/`stableSamples` | **语义验证**：断言一个 UIA 元素存在（可选再要求可用 / 值相等），或断言某窗口存在（可选再比对 bounds）。连续 `stableSamples` 次都成立才算数，否则轮询到超时。返回三态 **`satisfied` / `unsatisfied` / `unknown`**——`unknown` 是「判不出来」，**绝不可当成功读**。缺席不可证明，所以 `exists:false` 会被拒。**输入类工具之后跟一次它，才算拿到结论** |
 | `gui_uia` | `action` (必填)：`tree`/`find`/`invoke`/`value` + `handle`/`title`/`name`/`elType`/`depth`/`max` | Windows UI Automation 结构化查询，一次限定一个窗口。`tree` 列可交互元素（名称/类型/矩形/可用）；`find` 按 Name 子串或控件类型定位；`invoke` 经 InvokePattern（回退 TogglePattern）**直按按钮，不用坐标**；`value` 经 ValuePattern **直读控件文本，验证输入无需截图**。返回的矩形是物理像素，可直接喂给 `gui_click` |
 
 ## 精度栈：三层互补
@@ -50,9 +51,19 @@ pnpm add sage-guikit
 |----|------|------|
 | 结构层 | `gui_uia` | 标准控件（Win32 / WPF / WinForms）：按名称或控件类型定位，直读直按，最省 token 也最可靠 |
 | 视觉层 | `gui_window_shot` / `gui_screenshot annotate=true` | 自绘界面、游戏、CEF/Electron 这类 UIA 盲区：网格标签画进图里，agent 读标签报坐标。单看一个窗口用 `gui_window_shot`（被遮挡也抓得到，还省 token） |
-| 验证层 | `gui_wait` | 像素变化 / 窗口出现轮询，确认动作生效再继续 |
+| 验证层 | `gui_verify` / `gui_wait` | `gui_verify` 走语义（元素存在/可用/值相等、窗口存在/bounds）并给出 `satisfied`/`unsatisfied`/`unknown` 三态结论；`gui_wait` 走像素变化与窗口出现，更便宜但只说明「有变化」 |
 
-日常顺序：`gui_screen` 拿布局 → `gui_window_shot` 看目标 → 标注坐标 → `gui_click` / `gui_drag` → `gui_wait` 验证 → 必要时 `gui_uia` 直读控件文本核对。
+日常顺序：`gui_screen` 拿布局 → `gui_window_shot` 看目标 → 标注坐标 → `gui_click` / `gui_drag` → **`gui_verify` 拿结论**（或 `gui_wait` 等变化）→ 必要时 `gui_uia` 直读控件文本核对。
+
+### 输入类工具的回执：`sent` 不等于生效
+
+`gui_click` / `gui_drag` / `gui_type` / `gui_key` / `gui_scroll` 的返回值都带：
+
+```json
+"delivery": { "sent": true, "verified": false, "note": "..." }
+```
+
+它只说明**事件送进了 OS**，不说明**目标有反应**——实测过点击回执 `ok` 而界面纹丝不动（Chromium 丢弃后台 `PostMessage`、合成光标被实时抢走）。要结论就得跟一次 `gui_verify`；只读类工具（`gui_screen` / `gui_uia` / `gui_verify`）不挂这个字段。`gui_click` 另外回显 `requested:{x,y}`，与落到实处的 `x,y` 并排，两者对不上时一眼可见。
 
 ## 实现
 

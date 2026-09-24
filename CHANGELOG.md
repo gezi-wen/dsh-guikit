@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.0
+
+从 cua-driver（DSH 官方实验性 computer-use 插件）偷来的两样，都补在 guikit 的短板上。
+
+- 新增 **`gui_verify`**：语义验证。一条谓词（`mode=element` 断言某个 UIA 元素存在，可选
+  再要求 `enabled` / `valueEquals`；`mode=window` 断言某窗口存在，可选再比对 bounds），
+  连续 `stableSamples` 次都成立才算 `satisfied`，否则一直轮询到超时。
+  返回值是 **`satisfied` / `unsatisfied` / `unknown`** 三态——
+  `unknown` 表示「判不出来」（目标窗口不在、UIA 树遍历不穷尽），**绝不能当成功读**。
+  照抄 cua 的一条原则：**缺席不可证明**，所以 `exists:false` 直接拒绝。
+  实测五例：命中= satisfied（tries=2, streak=2）、窗口不存在= unknown、
+  元素不存在= unknown、bounds 差 10011px= unsatisfied 且报出精确 delta。
+- **输入类工具回执带 `delivery` 字段**（`gui_click` / `gui_drag` / `gui_type` / `gui_key` /
+  `gui_scroll`）：`{sent:true, verified:false, note}`。起因是 2026-09-25 实测到
+  「点击回执 ok 而界面纹丝不动」——Chromium 丢后台 PostMessage、合成光标被实时抢走，
+  调用方从回执里看不出。现在「未验证」是返回值的一部分，要结论就必须跟一次 `gui_verify`。
+  只读类工具（`gui_screen` / `gui_uia` / `gui_verify` 等）不挂这个字段。
+- `gui_click` 回执补 `requested:{x,y}`，与落到实处的 `x,y` 并排——两者不一致时一眼可见。
+
 ## 0.4.0
 
 - **换协议：MIT → Apache-2.0。** 代码一行没改，功能与 0.3.0 完全相同。
