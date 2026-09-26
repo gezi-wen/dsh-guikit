@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.1 — 改名 dsh-guikit
+
+- **包名 `sage-guikit` → `dsh-guikit`**。`cordis.patch.yml` 的 id / name 与
+  `lib/index.js` 的 `export const name` 同步跟进——三者不一致会崩在 readiness 之前。
+- **环境变量与缓存目录跟进改名**：`SAGE_GUIKIT_DIR` → `DSH_GUIKIT_DIR`，
+  `%TEMP%\sage-guikit` → `%TEMP%\dsh-guikit`。⚠️ 这是 **breaking change**：若你显式设过
+  旧变量，升级后会被忽略并回落到默认目录。缓存可再生，无数据损失。
+- keywords 补 `dsh-plugin` / `deepseek` / `cordis` / `computer-use` / `uiautomation` 等。
+- 脱敏：清掉 README 与 NOTICE 里的真名署名、CHANGELOG 里的开发机绝对路径。
+
 ## 0.5.0
 
 从 cua-driver（DSH 官方实验性 computer-use 插件）偷来的两样，都补在 guikit 的短板上。
@@ -66,8 +76,8 @@
   `[Console]::OutputEncoding` 会回退到系统 ANSI 代码页（中文 Windows = gb2312），
   PowerShell 于是把 GBK 字节写进 stdout，而宿主按 UTF-8 解码——UIA 元素名、窗口标题里的中文
   全部变成 U+FFFD，ASCII 部分正常所以很隐蔽。现在 PRELUDE 第一句就把 stdout 钉死成 UTF-8。
-- **修复：硬编码的本机路径。** 截图与编译缓存目录原本写死 `E:\workspace\sage-gui`，
-  换台机器直接失败。改为 `%TEMP%\sage-guikit`，可用环境变量 `SAGE_GUIKIT_DIR` 覆盖；
+- **修复：硬编码的本机路径。** 截图与编译缓存目录原本写死一个开发机绝对路径，
+  换台机器直接失败。改为 `%TEMP%\dsh-guikit`，可用环境变量 `DSH_GUIKIT_DIR` 覆盖；
   子进程 cwd 同步跟随该目录（cwd 不存在会让 spawn 直接 ENOENT）。
 - 补齐 `engines`、`repository` / `homepage` / `bugs`，加 MIT LICENSE 与中英双语 README。
 

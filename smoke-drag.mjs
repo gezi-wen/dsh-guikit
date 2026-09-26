@@ -10,7 +10,7 @@ import { writeFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
-const mod = await import('./lib/index.js').catch(() => import('sage-guikit'))
+const mod = await import('./lib/index.js').catch(() => import('dsh-guikit'))
 
 const tools = []
 const ctx = {

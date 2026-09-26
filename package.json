@@ -1,7 +1,7 @@
 {
-  "name": "sage-guikit",
-  "description": "Sage GUI Toolkit — Windows desktop control tools (screen layout / annotated screenshot / click / type / key / scroll / wait / window / UIA structured query) via PowerShell + SendInput + UIAutomation, DPI-aware and multi-monitor safe",
-  "version": "0.5.0",
+  "name": "dsh-guikit",
+  "description": "DSH GUI Toolkit — Windows desktop control tools for DeepSeek Harness (DSH): screen layout, annotated screenshot, single-window capture, click / drag / type / key / scroll, semantic verification, window management, and UI Automation structured queries. Twelve model tools, zero external dependencies, no resident service.",
+  "version": "0.5.1",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -29,18 +29,30 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gezi-wen/sage-guikit.git"
+    "url": "git+https://github.com/gezi-wen/dsh-guikit.git"
   },
-  "homepage": "https://github.com/gezi-wen/sage-guikit#readme",
+  "homepage": "https://github.com/gezi-wen/dsh-guikit#readme",
   "bugs": {
-    "url": "https://github.com/gezi-wen/sage-guikit/issues"
+    "url": "https://github.com/gezi-wen/dsh-guikit/issues"
   },
   "keywords": [
     "dsh",
+    "dsh-plugin",
+    "deepseek",
     "deepseek-harness",
+    "cordis",
     "plugin",
     "gui",
     "automation",
-    "windows"
+    "desktop-automation",
+    "computer-use",
+    "screen-capture",
+    "screenshot",
+    "uiautomation",
+    "accessibility",
+    "windows",
+    "windows-automation",
+    "mouse",
+    "keyboard"
   ]
 }

@@ -1,4 +1,5 @@
 node_modules/
 *.tgz
 *.bak-*
+UPGRADE-DESIGN-*.md
 

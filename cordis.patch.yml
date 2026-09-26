@@ -1,4 +1,4 @@
-# sage-guikit bundle patch — inserts the GUI toolkit plugin into the profile tree.
+# dsh-guikit bundle patch — inserts the GUI toolkit plugin into the profile tree.
 - insert:
-    - id: sage-guikit
-      name: 'sage-guikit'
+    - id: dsh-guikit
+      name: 'dsh-guikit'

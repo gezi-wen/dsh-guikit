@@ -1,4 +1,4 @@
-# sage-guikit · Sage GUI Toolkit
+# dsh-guikit · DSH GUI Toolkit
 
 **Windows 桌面控制工具集**，给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）的 agent 装上眼睛和手：看屏幕、单窗口截图、点鼠标、拖动、打字、按快捷键、滚动、等生效、**验证生效**、管窗口，并能对标准控件做 Windows UI Automation 结构化定位。
 
@@ -13,10 +13,10 @@ Windows desktop-control toolset for DeepSeek Harness (DSH): monitor layout, whol
 ```sh
 # 1. 进 DSH profile 目录（例如 ~/.dsh/profiles/web）
 cd <DSH profile 目录>
-pnpm add sage-guikit
+pnpm add dsh-guikit
 
 # 2. 在该目录的 package.json 里把 bundle 挂上
-#    "dsh": { "profile": { "bundles": [ ..., "sage-guikit" ] } }
+#    "dsh": { "profile": { "bundles": [ ..., "dsh-guikit" ] } }
 
 # 3. 重启 dsh web
 ```
@@ -24,7 +24,7 @@ pnpm add sage-guikit
 本地开发用 `link:` 也行：
 
 ```json
-"dependencies": { "sage-guikit": "link:<你 clone 下来的目录>" }
+"dependencies": { "dsh-guikit": "link:<你 clone 下来的目录>" }
 ```
 ⚠️ link 方式下裸导入从**源位置**向上解析，够不到 profile 的 `node_modules`——需要在插件目录自己跑一次 `pnpm install` 装 peer 依赖（`@deepseek-ai/cordis`、`@deepseek-ai/dsh-tools`）。从 npm 安装没有这个问题。
 
@@ -74,7 +74,7 @@ pnpm add sage-guikit
 - `SetProcessDPIAware`：所有坐标一律物理像素，高 DPI 与多屏负坐标都安全
 - 结果以 JSON 从 stdout 回传，转成 text block。stdout 在 PRELUDE 第一句显式钉死为 UTF-8——子进程没有控制台时 .NET 会回退到系统 ANSI 代码页（中文 Windows = gb2312），不钉死则回传的中文界面文本（UIA 元素名、窗口标题）会乱码
 
-截图与编译缓存的落盘目录默认是 `%TEMP%\sage-guikit`，可用环境变量 `SAGE_GUIKIT_DIR` 覆盖。
+截图与编译缓存的落盘目录默认是 `%TEMP%\dsh-guikit`，可用环境变量 `DSH_GUIKIT_DIR` 覆盖。
 
 ### 一个非显然的约束：别把脚本写胖
 
@@ -110,6 +110,6 @@ node smoke-drag.mjs   # 拖拽端到端：起一个 DPI-aware 测试窗口，拖
 
 Apache-2.0 — 见 [LICENSE](LICENSE)，署名与第三方声明见 [NOTICE](NOTICE)。
 
-Copyright 2026 Bowen Zheng (gezi-wen)
+Copyright 2026 gezi-wen
 
 选 Apache-2.0 而不是 MIT，是因为它多两样东西：**明确的专利授权**（第 3 条），以及**`NOTICE` 必须随下游分发保留**（第 4(d) 条）——后者是 MIT 没有的，换协议之后别人 fork 走也没法把署名合法地删掉。

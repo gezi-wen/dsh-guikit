@@ -1,10 +1,10 @@
 /**
- * sage-guikit 冒烟测试挂具：stub Cordis ctx，真实执行注册的工具脚本。
+ * dsh-guikit 冒烟测试挂具：stub Cordis ctx，真实执行注册的工具脚本。
  * 用法：node smoke.mjs [toolName] —— 不带参数跑 gui_screen + gui_uia 快速组。
  */
 import { spawn as cpSpawn } from 'node:child_process'
 
-const mod = await import('./lib/index.js').catch(() => import('sage-guikit'))
+const mod = await import('./lib/index.js').catch(() => import('dsh-guikit'))
 
 const tools = []
 const ctx = {
