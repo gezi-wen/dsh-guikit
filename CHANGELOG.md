@@ -1,5 +1,85 @@
 # Changelog
 
+## 0.6.0 — 坐标契约 + UIA 五态 + `gui_locate`
+
+主线不是加功能，是**把三套坐标空间收敛成一条可自证的契约**：工具回带 `space`/`origin`/`scale`，
+annotate 图里烧标尺与水印，新增 `gui_locate` 把「看图猜坐标」这个环节整体删掉。
+
+- **Breaking（行为，非 API）**：`gui_uia` 遍历器由 `ControlViewWalker` 换成 **`RawViewWalker`**
+  （`ControlView` 与 `FindAll(Descendants)` 只返回 `IsControlElement=true` 的元素——同一窗口两者都只有 **818**，
+  而 RawViewWalker 有 **1578**，会漏掉非控件节点；且 RawView 的真实内容被中间层推深，
+  有 **743** 个非控件元素落在 depth > 14），`depth` 默认 **10 → 40**、`max` 默认 **300 → 2000**
+  （硬顶 **8000**），并新增**返回预算 `maxRows`（默认 120、硬顶 2000）**。
+  ⚠️ `tree` 默认回带的 `elements` 行数因此从「最多 300」变为「最多 120 行」——
+  这是有意的：本机 DSH 窗口 `RawView` 全树实测 1500+ 个元素（随窗口内容漂移，同一窗口不同时刻见过 1578 与 2450~2522），
+  默认全量返回等于上百 KB JSON 灌进模型上下文。
+  被 `maxRows` 截断时 `rows_truncated=true` 且带 hint。`count` 语义明确为「实际回带行数」，
+  `matched`（匹配总数）/ `total`（遍历访问到的元素数）另列。
+  **若你的代码按 `count == 0` 判断「不存在」，请改判 `status`。**
+- **Changed**：`gui_uia` 返回的 `type` 现在是**短名**（`Button`），不再是 `ControlType.Button`。
+  旧的 `-replace "^ControlType\\."` 因 JS → PowerShell 的转义退化**从未真正生效**——它曾把完整
+  `ProgrammaticName` 原样回带；新的空壳判据需要真剥前缀。`elType` 过滤用子串匹配（`-like "*Button*"`），
+  **两种写法的调用都不受影响**，所以按 Changed 而不是 Breaking。
+- **Added**：第 13 个工具 **`gui_locate`**：给 `name`（必填）+ 可选 `window`（标题子串或 handle，
+  缺省用前台窗口兜底；`title` 是等价别名——和 `gui_uia`/`gui_verify` 的叫法对齐，两者都给时 `window` 优先）/
+  `elType` / `index` / `depth` / `max` / `timeoutMs`，直接用 UIA 返回**可喂给 `gui_click` 的虚拟桌面物理像素**
+  `point{x,y}` + `rect` + `type` + `enabled` + `uiaPath` + `total`/`matched` + `space`/`origin`/`scale`。
+  **绝不返回猜测坐标**：7 个状态里**只有 `status="found"` 给顶层 `point`**。状态集合比 `gui_uia` 更大：
+  `found` / `ambiguous`（多命中且未给 `index` → 回 `candidates[]` 前 5 个候选，各带 rect/point/offscreen，
+  离屏候选的 `point` 为 `null`）/ **`offscreen`**（元素存在但离屏，或中心在窗口 rect 外——先让它可见，
+  **别点那个坐标**；实测本机 DSH 窗口有 1202/1297 个 Text 元素 `offscreen:true`、1130 个 y < −1000，
+  这不是理论顾虑）/ `not-found`（遍历走完、确实没匹配）/ `not-exposed` / `inconclusive` / `truncated`。
+  `index` 越界会**明确报错并给出 `validIndex` 区间**（不静默回落 0）；`timeoutMs` 给了就反复重走
+  直到元素出现（250 ms 间隔；默认 0 = 单次）。
+- **Added**：`gui_uia` 返回**五态 `status`**——`found` / `empty-but-accessible` / `not-exposed` / `inconclusive` / `truncated`，
+  并回带 `total` / `matched` / `truncated` / `rows_truncated` / `depth_reached` / `walker` / `hints`。
+  **只有 `empty-but-accessible` 允许读成「确实没有这个元素」**；另外三态分别是「换视觉路径」（`not-exposed`）、
+  「人工判断：空窗口与 a11y 被藏分不清」（`inconclusive`）、「absence 未证明，去加预算」（`truncated`）。
+  分流规则：遍历**自然走完**（未撞 `depth`/`max`）后看树的形状——有文本/可交互节点且无匹配 = `empty-but-accessible`；
+  **零内容节点**（`textNodes == 0` 且无可交互控件）＝ 空壳，再按本次遍历访问到的节点数分：
+  `total > 0` → `not-exposed`（有渲染面但没 a11y），`total == 0` → `inconclusive`（连面都没有）。
+  该带 hint 的态都带（`hints` 数组 + `hint` 取第一条，状态类 hint 排在 `rows_truncated` 之前），
+  `invoke`/`value` 也不再报误导性的「no element matching」。
+- **Added**：`gui_click` / `gui_drag` 新增 `window`（标题子串或 handle）与 `space`（`virtual-desktop`（默认）| `window-local`）。
+  `window-local` 时入参按 `gui_window_shot` 的图内像素解释，换算在 pwsh 内完成；
+  回执新增 `space` / `origin` / `scale` / `requested` / `absolute` / `insideWindow` / `target`，窗口不存在直接报错而不是猜坐标。
+  `gui_click` 的 `requested`/`absolute` 是**单点**；`gui_drag` 是 `{from,to}` **两点**，且 `insideWindow`
+  要求起点与终点**都在**窗口内才为 `true`。
+- **Added**：`gui_click` 新增可选 `verify`（参数与 `gui_verify` 逐个同名，含 `handle`/`exists`/`boundsX..H`/
+  `tolerancePx`/`intervalMs`；该对象设了 `additionalProperties: false`）：
+  点完在**同一进程内**立刻跑一次与 `gui_verify` 等价的断言，结果并进回执 `verify:{verdict,detail,observed,tries,streak}`。
+  此时 `delivery.sent` 仍恒为 `true`，而 **`delivery.verified` 只在 verify 判定 `satisfied` 时为 `true`**
+  （`unsatisfied` / `unknown` 保持 `false`，`delivery.note` 会写明这是工具内断言的判定结果、
+  并点明只有 `satisfied` 才算 verified）。默认关。
+- **Added**：坐标契约字段进回执。`gui_screen` 每屏加 `physical_rect` / `logical_rect` / `dpi_scale` / `is_primary` / `display_id`
+  （逐屏 `MonitorFromPoint` + `GetDpiForMonitor`，取不到时 `dpi_scale`/`logical_rect` 为 `null`，不假装 1.0），
+  顶层加 `virtual_desktop_origin` 与 `space`；`gui_screenshot` 加 `space` / `origin` / `image_px` / `scale` / `note`；
+  `gui_window_shot` 加 `space:"window-local"` / `origin` / `image_px`（旧的 `x/y` 保留为别名）。
+- **Fixed**：**annotate 标签与网格线不对齐**（0.5.x 实测递增偏差：240→195px、480→355px、720→515px，随坐标增大）。
+  成因是网格、标签各自算一遍图内坐标。现在同一交点只算一次整数坐标、三处复用，并新增顶部/左侧**标尺**与
+  **左下角水印**（`origin`/`space`/`scale`/`region`/`step` 烧进图里）——截图离开工具之后换算依据不再丢。
+- **Fixed**：**`gui_uia` 截断不说**。0.5.1 的 `depth=10` + `max=300` 在同一 DSH 窗口直接撞上限却只回 300 行，
+  看起来像「只有这些元素」。现在回带 `total`/`truncated` 两个数，并把默认预算提到实测够用的量级
+  （`max` 硬顶提到 8000：真树有 2450~2522 个元素，硬顶停在 2000 会让「不存在」永远无法被证明）。
+- **Fixed**：**`gui_verify` 的遍历器与 `gui_uia` 对齐**（同用 `RawViewWalker` + depth 40，共用同一段断言实现）。
+  0.5.1 的 `gui_verify` 走 ControlView 且 depth 只有 14，在 Chromium/Electron 窗口上够不到文本节点，
+  于是元素断言只能回 `unknown`（「判不出来」）。前后对照（同一断言、同一窗口）：
+  `unknown`（5201 ms / tries=6）→ **`satisfied`（140 ms / tries=1）**。
+- **Fixed（文档）**：更正「Electron/CEF 是 UIA 盲区」的旧结论——**取决于该应用有没有点亮 Chromium 的 a11y**。
+  DSH 自己的 Electron 窗口裸 UIA 就有 470 个元素（RawView 1500+），而第三方空壳应用只暴露 4 行 Pane。
+- **向后兼容**：所有旧字段名与旧参数名**全部保留**（`gui_window_shot` 的 `x/y`、`gui_uia` 的 `window`/`count`/`elements`、
+  动作工具的 `x`/`y`/`result`/`fgTitle`/`fgHandle` 等），新增字段纯追加；`space` 不传时一律按 `virtual-desktop` 解释，
+  旧调用行为不变。**唯一需要迁移的是**：把 `gui_uia` 的 `count == 0` 判据换成 `status`，
+  否则会把 `not-exposed` / `truncated` 误当「不存在」；另外 `type` 由 `ControlType.Button` 变成 `Button`，
+  按完整前缀做相等比较的代码要跟着改（子串匹配不受影响）。
+
+### 已知限制（留到 0.6.1）
+
+- annotate 大区域会**静默粗化 `step`**（面积 > 500 万像素且 `step` < 200 时改成 240），
+  而**回执不自报实际步长**（只有图内水印写了）——程序化链路要拿到真实步长，请显式传 ≥ 200 的 `step`。
+- 工具参数**不校验未知键**：把 `handle` 传给只认 `window` 的 `gui_locate` 不会报错，
+  而是静默回退前台窗口、再报「没有前台窗口」。按 README 的工具表用参数名。
+
 ## 0.5.1 — 改名 dsh-guikit
 
 - **包名 `sage-guikit` → `dsh-guikit`**。`cordis.patch.yml` 的 id / name 与
