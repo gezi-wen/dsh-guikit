@@ -213,7 +213,15 @@ Windows Defender 会经 AMSI 扫描传给 `pwsh -Command` 的脚本。把「按�
 - **UIPI**：点不进管理员权限窗口；锁屏 / UAC 安全桌面完全不可达
 - **Windows 前台锁**：程序化抢焦点会被系统静默拒绝——注入前先 `gui_window activate` 或点击目标窗口。动作类工具可带 `window` 显式指定目标，不必依赖「当前前台」
 - **z 序陷阱**：前台窗口切换后原坐标可能落到别的窗口上——靠 click/type 的焦点窗口回显发现
-- **DPI-unaware 目标（点/拖/截都会受影响）**：DPI-unaware 的应用（WinForms 默认、部分 CEF 壳）在系统缩放 ≠ 100% 时受 Windows DPI 虚拟化影响：`SetCursorPos` 坐标被缩放甚至返回 false；拖拽的横向位移可能被吃掉（实测 175% 缩放下拖一个 unaware 窗口，纵向走 90px、横向 0px）；`gui_window_shot` 抓出来的图内容只铺在左上角一小块。**判据：`gui_window_shot` 返回的 `scale` > 1**（= 系统 DPI ÷ 窗口 DPI），此时按 `原点 + 图坐标 × scale` 换算，或改用 `space="window-local"` 让工具自己换算。Obsidian / Electron / Edge 这类 DPI-aware 应用全部正常
+- **`scale` 与 DPI（点/拖/截都受影响，**混合缩放最容易踩**）**：`gui_window_shot` 回带的 `scale` = `系统DPI ÷ 窗口DPI`，是「图像像素 → 虚拟桌面坐标」的换算系数。三种取值都要认得：
+  - **`scale = 1`**：DPI-aware 窗口 + 该显示器缩放与主屏一致（最常见）。图坐标就是屏幕坐标
+  - **`scale > 1`**：**DPI-unaware** 应用（WinForms 默认、部分 CEF 壳）在缩放 ≠ 100% 时——内容按 96dpi 逻辑尺度渲染、只铺在图的左上角，其余是黑的；`SetCursorPos` 坐标被缩放甚至返回 false，拖拽位移可能被吃掉（实测 175% 下拖 unaware 窗口：纵向走 90px、横向 0px）。Obsidian / Electron / Edge 这类 DPI-aware 应用不受此影响
+  - **`scale < 1`**：**DPI-aware** 应用跑在「缩放百分比与主屏不同」的显示器上（实测主屏 175% + 副屏 200% ⇒ `168/192 = 0.875`）。这时该窗口的坐标是被 Windows 虚拟化过的，**不是 bug**
+  用法三种情况都一样：**`gui_click` / `gui_drag` 传 `space="window-local"`、直接给 `gui_window_shot` 图里的像素，`scale` 由工具自己乘**；要手算就是 `屏幕坐标 = origin + 图坐标 × scale`。**别自己心算比例**
+- **混合缩放下的截图裁切（已知限制，下个版本修）**：`gui_window_shot` 的位图画布按「虚拟桌面坐标空间」分配，而 `PrintWindow` 按窗口**自身像素**渲染内容，两者不等时图就不完整：
+  - `scale < 1`（该屏缩放 > 主屏）⇒ 内容比画布大，**右下被裁掉**（实测画布 2823×1773 只装下 3226×2026 内容的一部分，整条底部播放条不见了）
+  - `scale > 1` ⇒ 内容比画布小，右/下多出纯黑边
+  这只影响「看图能看到多少」，**不影响坐标正确性**：`scale` 依然正确、`space="window-local"` 的点按依然命中。要完全避开，**把所有显示器设成同一个缩放百分比**（`scale` 恒为 1，图与屏幕逐像素对应）
 - **最小化窗口**：`gui_window_shot` 对最小化窗口会出黑图，先 `gui_window activate`
 - **锁屏**：锁屏时 `SetCursorPos` 静默返回 false、光标冻住、前台 Idle。这是环境阻挡不是插件 bug——唯一判据是光标真能移动
 - **UIA 不暴露 ≠ Electron**：能不能走 UIA **取决于该应用有没有点亮 Chromium 的 a11y**，不是「Electron/CEF 一律是盲区」。DSH 自己的 Electron 窗口裸 UIA 就有 470 个元素（`RawViewWalker` 数百到近千个，随窗口内容漂移），而某些第三方 Electron 壳（实测 `OrpheusBrowserHost`：`total=4` / `textNodes=0` / 可交互控件=0）只暴露空壳。点亮手法**无客户端解法**（`WM_GETOBJECT`、事件订阅、`CacheRequest`、`SPI_SETSCREENREADER` 全部实测无效），所以这类应用只能走视觉路径——`gui_uia` / `gui_locate` 会明确回 `not-exposed` 并给 hint，**不会假装「控件不存在」**

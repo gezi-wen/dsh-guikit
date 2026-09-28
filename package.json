@@ -1,7 +1,7 @@
 {
   "name": "dsh-guikit",
   "description": "DSH GUI Toolkit — Windows desktop control tools for DeepSeek Harness (DSH): screen layout, annotated screenshot, single-window capture, click / drag / type / key / scroll, semantic verification, window management, and UI Automation structured queries. Thirteen model tools, zero external dependencies, no resident service.",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
