@@ -232,6 +232,15 @@ Windows Defender 会经 AMSI 扫描传给 `pwsh -Command` 的脚本。把「按�
 - `gui_type` 的 clipboard 模式会覆盖用户剪贴板；unicode 模式更干净
 - 工具操作的是**真实鼠标键盘**——跑自动化期间这块屏幕就是它的实验台，同机其它 agent 的输入会互相污染
 
+## DSH 兼容性
+
+`engines.dsh: >=0.1.2-rc.1` —— 单边开区间、**不设上界**，任何未来的 DSH 版本都不会被这道声明挡住。
+
+已在两个生产 profile 上实测：**官方桌面版 `0.2.0-rc.2`** 与**网页版 `0.2.0-rc.1`**，13 个工具全部可用。
+
+host 半只依赖 `@deepseek-ai/cordis` 与 `@deepseek-ai/dsh-tools`，peer 写 `*` —— 不锁定宿主版本，
+也不绑定任何 client 半（本插件没有 UI）。
+
 ## 开发
 
 ```sh
